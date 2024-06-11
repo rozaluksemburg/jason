@@ -1,0 +1,133 @@
+<!DOCTYPE html>
+<html lang="ru">
+<head>
+    <meta charset="UTF-8">
+    <title>Отслеживание прогресса курса на Rust</title>
+    <style>
+        body {
+            font-family: Arial, sans-serif;
+            background-color: #f4f4f4;
+            margin: 0;
+            padding: 20px;
+            text-align: center;
+        }
+        h1 {
+            color: #333;
+        }
+        ul {
+            list-style-type: none;
+            padding: 0;
+        }
+        li {
+            background: #fff;
+            margin: 5px 0;
+            padding: 10px;
+            border-radius: 5px;
+            box-shadow: 0 2px 4px rgba(0, 0, 0, 0.1);
+            display: flex;
+            justify-content: space-between;
+            align-items: center;
+        }
+        .completed-text {
+            text-decoration: line-through;
+            color: gray;
+        }
+        button {
+            padding: 5 10px;
+            background-color: #007bff;
+            color: white;
+            border: none;
+            border-radius: 3px;
+            cursor: pointer;
+        }
+        button.completed {
+            background-color: #28a745;
+        }
+        .progress-container {
+            margin: 20px auto;
+            width: 200px;
+            height: 200px;
+            position: relative;
+        }
+        .progress-ring__circle {
+            fill: transparent;
+            stroke-width: 20;
+            transform: rotate(-90deg);
+            transform-origin: 50% 50%;
+        }
+        .progress-ring__background {
+            stroke: #e6e6e6;
+        }
+        .progress-ring__progress {
+            stroke: #28a745;
+            stroke-linecap: round;
+            transition: stroke-dashoffset 0.35s;
+            transform: rotate(-90deg);
+            transform-origin: 50% 50%;
+        }
+    </style>
+</head>
+<body>
+    <h1>Дионис Леонидович заполнит круг зеленым </h1>
+    <div class="progress-container">
+        <svg class="progress-ring" width="200" height="200">
+            <circle
+                class="progress-ring__circle progress-ring__background"
+                stroke-width="20"
+                r="80"
+                cx="100"
+                cy="100"
+            />
+            <circle
+                class="progress-ring__circle progress-ring__progress"
+                stroke-width="20"
+                r="80"
+                cx="100"
+                cy="100"
+            />
+        </svg>
+    </div>
+    <ul id="lessons-list">
+        <script>
+            const totalLessons = 240;
+            for (let i = 1; i <= totalLessons; i++) {
+                document.write(`
+                    <li id="lesson-${i}">
+                        <span id="lesson-text-${i}">Урок ${i}</span>
+                        <button onclick="toggleCompletion(${i})" id="button-${i}" class="not-completed">Не завершено</button>
+                    </li>
+                `);
+            }
+
+            function toggleCompletion(lessonNumber) {
+                const lessonTextElement = document.getElementById(`lesson-text-${lessonNumber}`);
+                const buttonElement = document.getElementById(`button-${lessonNumber}`);
+                lessonTextElement.classList.toggle('completed-text');
+
+                if (lessonTextElement.classList.contains('completed-text')) {
+                    buttonElement.textContent = 'Завершено';
+                    buttonElement.classList.add('completed');
+                } else {
+                    buttonElement.textContent = 'Не завершено';
+                    buttonElement.classList.remove('completed');
+                }
+
+                updateProgress();
+            }
+
+            function updateProgress() {
+                const completedLessons = document.querySelectorAll('.completed-text').length;
+                const progressCircle = document.querySelector('.progress-ring__progress');
+                const radius = progressCircle.r.baseVal.value;
+                const circumference = 2 * Math.PI * radius;
+                const offset = circumference - (completedLessons / totalLessons) * circumference;
+                progressCircle.style.strokeDasharray = `${circumference} ${circumference}`;
+                progressCircle.style.strokeDashoffset = offset;
+            }
+
+            // Инициализация кольца прогресса
+            updateProgress();
+        </script>
+    </ul>
+</body>
+</html>

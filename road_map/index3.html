@@ -1,0 +1,332 @@
+<!DOCTYPE html>
+<html lang="ru">
+<head>
+    <meta charset="UTF-8">
+    <title>Отслеживание прогресса курса</title>
+    <style>
+        body {
+            font-family: Arial, sans-serif;
+            background-color: #f4f4f4;
+            margin: 0;
+            padding: 20px;
+            text-align: center;
+        }
+        h1 {
+            color: #333;
+        }
+        ul {
+            list-style-type: none;
+            padding: 0;
+        }
+        li {
+            background: #fff;
+            margin: 5px 0;
+            padding: 10px;
+            border-radius: 5px;
+            box-shadow: 0 2px 4px rgba(0, 0, 0, 0.1);
+            display: flex;
+            justify-content: space-between;
+            align-items: center;
+        }
+        .completed-text {
+            text-decoration: line-through;
+            color: gray;
+        }
+        button {
+            padding: 5px 10px;
+            background-color: #007bff;
+            color: white;
+            border: none;
+            border-radius: 3px;
+            cursor: pointer;
+        }
+        button.completed {
+            background-color: #28a745;
+        }
+        .progress-container {
+            margin: 20px auto;
+            width: 200px;
+            height: 200px;
+            position: relative;
+        }
+        .progress-ring__circle {
+            fill: transparent;
+            stroke-width: 20;
+            transform: rotate(-90deg);
+            transform-origin: 50% 50%;
+        }
+        .progress-ring__background {
+            stroke: #e6e6e6;
+        }
+        .progress-ring__progress {
+            stroke: #28a745;
+            stroke-linecap: round;
+            transition: stroke-dashoffset 0.35s;
+            transform: rotate(-90deg);
+            transform-origin: 50% 50%;
+        }
+        .input-container {
+            margin-bottom: 20px;
+        }
+        .input-container input, .input-container button {
+            padding: 10px;
+            margin: 5px;
+            border-radius: 5px;
+            border: 1px solid #ccc;
+        }
+        .input-container button {
+            background-color: #007bff;
+            color: white;
+            cursor: pointer;
+        }
+    </style>
+</head>
+<body>
+    <h1 id="title">Отслеживание прогресса курса</h1>
+    <div class="input-container">
+        <input type="text" id="course-title" placeholder="Введите заголовок курса">
+        <input type="number" id="lesson-count" placeholder="Количество уроков">
+        <button onclick="createLessonPlan()">Создать карту уроков</button>
+    </div>
+    <div class="progress-container">
+        <svg class="progress-ring" width="200" height="200">
+            <circle
+                class="progress-ring__circle progress-ring__background"
+                stroke-width="20"
+                r="80"
+                cx="100"
+                cy="100"
+            />
+            <circle
+                class="progress-ring__circle progress-ring__progress"
+                stroke-width="20"
+                r="80"
+                cx="100"
+                cy="100"
+            />
+        </svg>
+    </div>
+    <ul id="lessons-list"></ul>
+
+    <script>
+        function createLessonPlan() {
+            const courseTitle = document.getElementById('course-title').value || 'Отслеживание прогресса курса';
+            const lessonCount = parseInt(document.getElementById('lesson-count').value) || 0;
+            
+            if (lessonCount <= 0) {
+                alert('Пожалуйста, введите валидное количество уроков.');
+                return;
+            }
+            
+            localStorage.setItem('courseTitle', courseTitle);
+            localStorage.setItem('lessonCount', lessonCount);
+            localStorage.removeItem('completedLessons');
+
+            document.getElementById('title').textContent = courseTitle;
+
+            const lessonsList = document.getElementById('lessons-list');
+            lessonsList.innerHTML = '';
+            for (let i = 1; i <= lessonCount; i++) {
+                const lessonItem = document.createElement('li');
+                lessonItem.id = `lesson-${i}`;
+
+                const lessonText = document.createElement('span');
+                lessonText.id = `lesson-text-${i}`;
+                lessonText.textContent = `Урок ${i}`;
+                lessonItem.appendChild(lessonText);
+
+                const lessonButton = document.createElement('button');
+                lessonButton.id = `button-${i}`;
+                lessonButton.textContent = 'Не завершено';
+                lessonButton.className = 'not-completed';
+                lessonButton.onclick = () => toggle  
+                lessonsList.appendChild(lessonItem);
+        }
+        
+        updateProgress();
+    }
+
+    function saveProgress() {
+        const completedLessons = Array.from(document.querySelectorAll('.completed-text'))
+                                     .map(el => parseInt(el.id.split('-')[2]));
+        localStorage.setItem('completedLessons', JSON.stringify(completedLessons));
+    }
+
+    function toggleCompletion(lessonNumber) {
+        const lessonTextElement = document.getElementById(`lesson-text-${lessonNumber}`);
+        const buttonElement = document.getElementById(`button-${lessonNumber}`);
+        lessonTextElement.classList.toggle('completed-text');
+        if (lessonTextElement.classList.contains('completed-text')) {
+            buttonElement.textContent = 'Завершено';
+            buttonElement.classList.add('completed');
+        } else {
+            buttonElement.textContent = 'Не завершено';
+            buttonElement.classList.remove('completed');
+        }
+        updateProgress();
+        saveProgress();
+    }
+
+    function updateProgress() {
+        const completedLessons = document.querySelectorAll('.completed-text').length;
+        const progressCircle = document.querySelector('.progress-ring__progress');
+        const radius = progressCircle.r.baseVal.value;
+        const circumference = 2 * Math.PI * radius;
+        const offset = circumference - (completedLessons / (parseInt(localStorage.getItem('lessonCount')) || 1)) * circumference;
+        progressCircle.style.strokeDasharray = `${circumference} ${circumference}`;
+        progressCircle.style.strokeDashoffset = offset;
+    }
+
+    document.addEventListener('DOMContentLoaded', () => {
+        loadProgress();
+    });
+
+      function loadProsress() {
+        const savedProgress = JSON.parse(localStorage.getItem('completedLessons')) || [];
+        const savedTitle = localStorage.getItem('courseTitle') || 'Отслеживание прогресса курса';
+        const savedLessonCount = localStorage.getItem('lessonCount') || 0;
+
+        document.getElementById('title').textContent = savedTitle;
+        const lessonsList = document.getElementById('lessons-list');
+        lessonsList.innerHTML = '';
+        for (let i = 1; i <= savedLessonCount; i++) {
+            const lessonItem = document.createElement('li');
+            lessonItem.id = `lesson-${i}`;
+
+            const lessonText = document.createElement('span');
+            lessonText.id = `lesson-text-${i}`;
+            lessonText.textContent = `Урок ${i}`;
+            lessonItem.appendChild(lessonText);
+
+            const lessonButton = document.createElement('button');
+            lessonButton.id = `button-${i}`;
+            lessonButton.textContent = 'Не завершено';
+            lessonButton.className = 'not-completed';
+            lessonButton.onclick = () => toggleCompletion(i);
+            lessonItem.appendChild(lessonButton);
+
+            if (savedProgress.includes(i)) {
+                lessonText.classList.add('completed-text');
+                lessonButton.textContent = 'Завершено';
+                lessonButton.classList.add('completed');
+            }
+
+            lessonsList.appendChild(lessonItem);
+        }
+
+        updateProgress();
+    }
+</script>
+<script>
+    function createLessonPlan() {
+        const courseTitle = document.getElementById('course-title').value || 'Отслеживание прогресса курса';
+        const lessonCount = parseInt(document.getElementById('lesson-count').value) || 0;
+        
+        if (lessonCount <= 0) {
+            alert('Пожалуйста, введите валидное количество уроков.');
+            return;
+        }
+        
+        localStorage.setItem('courseTitle', courseTitle);
+        localStorage.setItem('lessonCount', lessonCount);
+        localStorage.removeItem('completedLessons');
+
+        document.getElementById('title').textContent = courseTitle;
+
+        const lessonsList = document.getElementById('lessons-list');
+        lessonsList.innerHTML = '';
+        for (let i = 1; i <= lessonCount; i++) {
+            const lessonItem = document.createElement('li');
+            lessonItem.id = `lesson-${i}`;
+
+            const lessonText = document.createElement('span');
+            lessonText.id = `lesson-text-${i}`;
+            lessonText.textContent = `Урок ${i}`;
+            lessonItem.appendChild(lessonText);
+
+            const lessonButton = document.createElement('button');
+            lessonButton.id = `button-${i}`;
+            lessonButton.textContent = 'Не завершено';
+            lessonButton.className = 'not-completed';
+            lessonButton.onclick = () => toggleCompletion(i);
+            lessonItem.appendChild(lessonButton);
+
+            lessonsList.appendChild(lessonItem);
+        }
+        
+        updateProgress();
+    }
+
+    function saveProgress() {
+        const completedLessons = Array.from(document.querySelectorAll('.completed-text'))
+                                     .map(el => parseInt(el.id.split('-')[2]));
+        localStorage.setItem('completedLessons', JSON.stringify(completedLessons));
+    }
+
+    function toggleCompletion(lessonNumber) {
+        const lessonTextElement = document.getElementById(`lesson-text-${lessonNumber}`);
+        const buttonElement = document.getElementById(`button-${lessonNumber}`);
+        lessonTextElement.classList.toggle('completed-text');
+        if (lessonTextElement.classList.contains('completed-text')) {
+            buttonElement.textContent = 'Завершено';
+            buttonElement.classList.add('completed');
+        } else {
+            buttonElement.textContent = 'Не завершено';
+            buttonElement.classList.remove('completed');
+        }
+        updateProgress();
+        saveProgress();
+    }
+
+    function updateProgress() {
+        const completedLessons = document.querySelectorAll('.completed-text').length;
+        const progressCircle = document.querySelector('.progress-ring__progress');
+        const radius = progressCircle.r.baseVal.value;
+        const circumference = 2 * Math.PI * radius;
+        const offset = circumference - (completedLessons / (parseInt(localStorage.getItem('lessonCount')) || 1)) * circumference;
+        progressCircle.style.strokeDasharray = `${circumference} ${circumference}`;
+        progressCircle.style.strokeDashoffset = offset;
+    }
+
+    document.addEventListener('DOMContentLoaded', () => {
+        loadProgress();
+    });
+
+    function loadProgress() {
+        const savedProgress = JSON.parse(localStorage.getItem('completedLessons')) || [];
+        const savedTitle = localStorage.getItem('courseTitle') || 'Отслеживание прогресса курса';
+        const savedLessonCount = localStorage.getItem('lessonCount') || 0;
+
+        document.getElementById('title').textContent = savedTitle;
+        const lessonsList = document.getElementById('lessons-list');
+        lessonsList.innerHTML = '';
+        for (let i = 1; i <= savedLessonCount; i++) {
+            const lessonItem = document.createElement('li');
+            lessonItem.id = `lesson-${i}`;
+
+            const lessonText = document.createElement('span');
+            lessonText.id = `lesson-text-${i}`;
+            lessonText.textContent = `Урок ${i}`;
+            lessonItem.appendChild(lessonText);
+
+            const lessonButton = document.createElement('button');
+            lessonButton.id = `button-${i}`;
+            lessonButton.textContent = 'Не завершено';
+            lessonButton.className = 'not-completed';
+            lessonButton.onclick = () => toggleCompletion(i);
+            lessonItem.appendChild(lessonButton);
+
+            if (savedProgress.includes(i)) {
+                lessonText.classList.add('completed-text');
+                lessonButton.textContent = 'Завершено';
+                lessonButton.classList.add('completed');
+            }
+
+            lessonsList.appendChild(lessonItem);
+        }
+
+        updateProgress();
+    }
+</script>
+</body>
+</html>
